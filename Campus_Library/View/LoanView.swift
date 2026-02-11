@@ -17,10 +17,11 @@ struct LoanView: View {
                     LoanRow(loan: loan)
                 }
             }
-            .navigationTitle("All Loans")
+            .listStyle(.insetGrouped)
+            .navigationTitle("Loan History")
             .overlay {
                 if holder.loans.isEmpty {
-                    ContentUnavailableView("No active loans", systemImage: "tray")
+                    ContentUnavailableView("No active loans", systemImage: "tray.and.arrow.down")
                 }
             }
             .onAppear {
@@ -40,38 +41,65 @@ struct LoanRow: View {
     }
     
     var body: some View {
-        HStack {
-            VStack(alignment: .leading) {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(statusColor.opacity(0.15))
+                .frame(width: 40, height: 40)
+                .overlay {
+                    Image(systemName: statusIcon)
+                        .foregroundColor(statusColor)
+                        .font(.system(size: 16, weight: .bold))
+                }
+
+            VStack(alignment: .leading, spacing: 4) {
                 Text(loan.book?.title ?? "Unknown Book")
                     .font(.headline)
-                Text("Borrowed by: \(loan.member?.name ?? "Unknown")")
-                    .font(.caption)
+                    .lineLimit(1)
                 
-                if let returned = loan.returnedAt {
-                    Text("Returned on \(returned, style: .date)")
-                        .font(.caption2)
-                        .foregroundColor(.green)
-                } else {
-
-                    Text(isOverdue ? "Overdue" : "Active")
-                        .font(.caption2)
-                        .fontWeight(.bold)
-                        .foregroundColor(isOverdue ? .red : .blue)
+                Text("Member: \(loan.member?.name ?? "Unknown")")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                Group {
+                    if let returned = loan.returnedAt {
+                        Text("Returned \(returned, style: .date)")
+                    } else if let due = loan.dueAt {
+                        Text("Due \(due, style: .date)")
+                    }
                 }
+                .font(.caption2)
+                .foregroundColor(isOverdue ? .red : .secondary)
             }
             
             Spacer()
             
             if loan.returnedAt == nil {
                 Button {
-                    holder.returnLoan(loan)
+                    withAnimation {
+                        holder.returnLoan(loan)
+                    }
                 } label: {
-                    Image(systemName: "arrow.uturn.left.circle")
-                        .font(.title2)
-                        .foregroundColor(.blue)
+                    Text("Return")
+                        .font(.caption.bold())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .clipShape(Capsule())
                 }
                 .buttonStyle(BorderlessButtonStyle())
             }
         }
+        .padding(.vertical, 4)
+    }
+    
+    private var statusColor: Color {
+        if loan.returnedAt != nil { return .green }
+        return isOverdue ? .red : .blue
+    }
+    
+    private var statusIcon: String {
+        if loan.returnedAt != nil { return "arrow.down.circle.fill" }
+        return isOverdue ? "exclamationmark.triangle.fill" : "book.fill"
     }
 }

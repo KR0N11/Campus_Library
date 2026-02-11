@@ -26,22 +26,32 @@ struct BookView: View {
 
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        Button("All") { selectedCategory = nil }
-                            .padding(8)
-                            .background(selectedCategory == nil ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                            .cornerRadius(8)
+                    HStack(spacing: 12) {
+                        Button(action: { selectedCategory = nil }) {
+                            Text("All")
+                                .font(.system(size: 14, weight: .medium))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(selectedCategory == nil ? Color.blue : Color.gray.opacity(0.1))
+                                .foregroundColor(selectedCategory == nil ? .white : .primary)
+                                .clipShape(Capsule())
+                        }
                         
                         ForEach(holder.categories, id: \.self) { cat in
-                            Button(cat.name ?? "") { selectedCategory = cat }
-                                .padding(8)
-                                .background(selectedCategory == cat ? Color.blue.opacity(0.2) : Color.gray.opacity(0.1))
-                                .cornerRadius(8)
+                            Button(action: { selectedCategory = cat }) {
+                                Text(cat.name ?? "")
+                                    .font(.system(size: 14, weight: .medium))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(selectedCategory == cat ? Color.blue : Color.gray.opacity(0.1))
+                                    .foregroundColor(selectedCategory == cat ? .white : .primary)
+                                    .clipShape(Capsule())
+                            }
                         }
                     }
-                    .padding(.horizontal)
+                    .padding()
                 }
 
                 if filteredBooks.isEmpty {
@@ -57,13 +67,15 @@ struct BookView: View {
                             indexSet.map { filteredBooks[$0] }.forEach(holder.deleteBook)
                         }
                     }
+                    .listStyle(.plain)
                 }
             }
             .searchable(text: $searchText, prompt: "Search title or author")
-            .navigationTitle("Library Books")
+            .navigationTitle("Library")
             .toolbar {
                 Button(action: { showAddSheet = true }) {
-                    Image(systemName: "plus")
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title3)
                 }
             }
             .sheet(isPresented: $showAddSheet) {
@@ -77,23 +89,23 @@ struct BookRow: View {
     @ObservedObject var book: Book
 
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(book.title ?? "Unknown Title")
                 .font(.headline)
-            Text(book.author ?? "Unknown Author")
+            
+            Text("by \(book.author ?? "Unknown Author")")
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
-            if book.isAvailable {
-                Text("Available")
-                    .font(.caption)
-                    .foregroundColor(.green)
-            } else {
-                Text("Borrowed")
-                    .font(.caption)
-                    .foregroundColor(.red)
+            HStack(spacing: 4) {
+                Image(systemName: book.isAvailable ? "checkmark.circle.fill" : "clock.fill")
+                Text(book.isAvailable ? "Available" : "Borrowed")
             }
+            .font(.caption.bold())
+            .foregroundColor(book.isAvailable ? .green : .orange)
+            .padding(.top, 2)
         }
+        .padding(.vertical, 4)
     }
 }
 
@@ -105,19 +117,18 @@ struct AddBookView: View {
     @State private var author = ""
     @State private var isbn = ""
     @State private var selectedCat: Category?
-    
     @State private var newCategoryName = ""
 
     var body: some View {
         NavigationView {
             Form {
-                Section("Book Details") {
+                Section(header: Text("Book Details")) {
                     TextField("Title", text: $title)
                     TextField("Author", text: $author)
                     TextField("ISBN (Optional)", text: $isbn)
                 }
                 
-                Section("Category") {
+                Section(header: Text("Category")) {
                     Picker("Select Category", selection: $selectedCat) {
                         Text("None").tag(Category?.none)
                         ForEach(holder.categories, id: \.self) { cat in
@@ -126,22 +137,32 @@ struct AddBookView: View {
                     }
                     
                     HStack {
-                        TextField("New Category", text: $newCategoryName)
-                        Button("Add") {
+                        TextField("Create New Category", text: $newCategoryName)
+                        Button(action: {
                             holder.createCategory(name: newCategoryName)
                             newCategoryName = ""
+                        }) {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundColor(.blue)
                         }
                         .disabled(newCategoryName.isEmpty)
                     }
                 }
             }
-            .navigationTitle("Add Book")
+            .navigationTitle("Add New Book")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                Button("Save") {
-                    holder.createBook(title: title, author: author, isbn: isbn, category: selectedCat)
-                    dismiss()
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
                 }
-                .disabled(title.isEmpty || author.isEmpty)
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        holder.createBook(title: title, author: author, isbn: isbn, category: selectedCat)
+                        dismiss()
+                    }
+                    .disabled(title.isEmpty || author.isEmpty)
+                    .bold()
+                }
             }
         }
     }
@@ -159,13 +180,13 @@ struct EditBookView: View {
 
     var body: some View {
         Form {
-            Section("Book Details") {
+            Section(header: Text("Book Information")) {
                 TextField("Title", text: $title)
                 TextField("Author", text: $author)
                 TextField("ISBN", text: $isbn)
             }
             
-            Section("Category") {
+            Section(header: Text("Classification")) {
                 Picker("Category", selection: $selectedCat) {
                     Text("None").tag(Category?.none)
                     ForEach(holder.categories, id: \.self) { cat in
@@ -173,8 +194,15 @@ struct EditBookView: View {
                     }
                 }
             }
+            
+            Section {
+                Button(book.isAvailable ? "Mark as Borrowed" : "Mark as Available") {
+                    book.isAvailable.toggle()
+                }
+                .foregroundColor(book.isAvailable ? .red : .green)
+            }
         }
-        .navigationTitle("Edit Book")
+        .navigationTitle("Edit Details")
         .onAppear {
             title = book.title ?? ""
             author = book.author ?? ""
@@ -182,11 +210,12 @@ struct EditBookView: View {
             selectedCat = book.category
         }
         .toolbar {
-            Button("Save") {
+            Button("Done") {
                 holder.updateBook(book, title: title, author: author, isbn: isbn, category: selectedCat)
                 dismiss()
             }
             .disabled(title.isEmpty || author.isEmpty)
+            .bold()
         }
     }
 }

@@ -18,13 +18,25 @@ struct MemberView: View {
             List {
                 ForEach(holder.members, id: \.self) { member in
                     NavigationLink(destination: MemberDetailView(member: member)) {
-                        VStack(alignment: .leading) {
-                            Text(member.name ?? "Unknown")
-                                .font(.headline)
-                            Text(member.email ?? "")
-                                .font(.caption)
-                                .foregroundColor(.gray)
+                        HStack(spacing: 15) {
+                            Circle()
+                                .fill(Color.blue.opacity(0.1))
+                                .frame(width: 45, height: 45)
+                                .overlay {
+                                    Text(String(member.name?.first ?? "?").uppercased())
+                                        .font(.headline)
+                                        .foregroundColor(.blue)
+                                }
+                            
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(member.name ?? "Unknown")
+                                    .font(.headline)
+                                Text(member.email ?? "")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
                 .onDelete { indexSet in
@@ -34,24 +46,36 @@ struct MemberView: View {
             .navigationTitle("Members")
             .toolbar {
                 Button(action: { showAddSheet = true }) {
-                    Image(systemName: "person.badge.plus")
+                    Image(systemName: "person.badge.plus.fill")
+                        .font(.title3)
                 }
             }
             .sheet(isPresented: $showAddSheet) {
                 NavigationView {
                     Form {
-                        TextField("Name", text: $newName)
-                        TextField("Email", text: $newEmail)
+                        Section("Personal Information") {
+                            TextField("Full Name", text: $newName)
+                            TextField("Email Address", text: $newEmail)
+                                .keyboardType(.emailAddress)
+                                .autocapitalization(.none)
+                        }
                     }
                     .navigationTitle("New Member")
+                    .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
-                        Button("Save") {
-                            holder.createMember(name: newName, email: newEmail)
-                            newName = ""
-                            newEmail = ""
-                            showAddSheet = false
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { showAddSheet = false }
                         }
-                        .disabled(newName.isEmpty || newEmail.isEmpty)
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                holder.createMember(name: newName, email: newEmail)
+                                newName = ""
+                                newEmail = ""
+                                showAddSheet = false
+                            }
+                            .disabled(newName.isEmpty || newEmail.isEmpty)
+                            .bold()
+                        }
                     }
                 }
             }
@@ -78,16 +102,40 @@ struct MemberDetailView: View {
 
     var body: some View {
         List {
-            Section("Actions") {
+            Section {
+                VStack(spacing: 8) {
+                    Image(systemName: "person.circle.fill")
+                        .resizable()
+                        .frame(width: 80, height: 80)
+                        .foregroundColor(.blue.opacity(0.8))
+                    
+                    Text(member.name ?? "Member")
+                        .font(.title2.bold())
+                    
+                    Text(member.email ?? "")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical)
+            }
+            .listRowBackground(Color.clear)
+
+            Section {
                 Button(action: { showBorrowSheet = true }) {
-                    Label("Borrow a Book", systemImage: "plus.circle.fill")
+                    HStack {
+                        Label("New Loan", systemImage: "book.closed.fill")
+                        Spacer()
+                        Image(systemName: "plus")
+                            .font(.caption.bold())
+                    }
                 }
                 .disabled(holder.books.filter { $0.isAvailable }.isEmpty)
             }
-            
-            Section("Active Loans") {
+
+            Section("Active Loans (\(activeLoans.count))") {
                 if activeLoans.isEmpty {
-                    Text("No active loans").foregroundColor(.secondary)
+                    Text("No current borrowings").italic().foregroundColor(.secondary)
                 } else {
                     ForEach(activeLoans, id: \.self) { loan in
                         MemberLoanRow(loan: loan)
@@ -95,9 +143,9 @@ struct MemberDetailView: View {
                 }
             }
             
-            Section("Past Loans") {
+            Section("Return History") {
                 if pastLoans.isEmpty {
-                    Text("No history").foregroundColor(.secondary)
+                    Text("No past history").italic().foregroundColor(.secondary)
                 } else {
                     ForEach(pastLoans, id: \.self) { loan in
                         MemberLoanRow(loan: loan)
@@ -105,7 +153,8 @@ struct MemberDetailView: View {
                 }
             }
         }
-        .navigationTitle(member.name ?? "Member Details")
+        .listStyle(.insetGrouped)
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showBorrowSheet) {
             BorrowBookSheet(member: member)
         }
@@ -122,36 +171,52 @@ struct MemberLoanRow: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(loan.book?.title ?? "Unknown Book")
-                .font(.headline)
-            
-            if let returned = loan.returnedAt {
-                Text("Returned: \(returned, style: .date)")
-                    .font(.subheadline)
-                    .foregroundColor(.green)
-            } else {
-                HStack {
-                    Text("Due: \(loan.dueAt ?? Date(), style: .date)")
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(loan.book?.title ?? "Unknown Book")
+                        .font(.headline)
                     
-                    Spacer()
-
-                    Text(isOverdue ? "OVERDUE" : "Active")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(isOverdue ? .red : .blue)
+                    if let returned = loan.returnedAt {
+                        Label("Returned: \(returned, style: .date)", systemImage: "arrow.down.circle")
+                            .font(.caption)
+                            .foregroundColor(.green)
+                    } else {
+                        Label("Due: \(loan.dueAt ?? Date(), style: .date)", systemImage: "calendar")
+                            .font(.caption)
+                            .foregroundColor(isOverdue ? .red : .secondary)
+                    }
                 }
-                .font(.subheadline)
                 
-                Button("Return Book") {
-                    holder.returnLoan(loan)
+                Spacer()
+                
+                if loan.returnedAt == nil {
+                    Text(isOverdue ? "OVERDUE" : "ACTIVE")
+                        .font(.system(size: 10, weight: .black))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(isOverdue ? Color.red.opacity(0.1) : Color.blue.opacity(0.1))
+                        .foregroundColor(isOverdue ? .red : .blue)
+                        .cornerRadius(4)
                 }
-                .buttonStyle(.bordered)
-                .tint(.blue)
-                .padding(.top, 4)
+            }
+            
+            if loan.returnedAt == nil {
+                Button(action: {
+                    withAnimation { holder.returnLoan(loan) }
+                }) {
+                    Text("Return Book")
+                        .font(.subheadline.bold())
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 8)
+                        .background(Color.blue)
+                        .foregroundColor(.white)
+                        .cornerRadius(8)
+                }
+                .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 6)
     }
 }
 
@@ -170,19 +235,31 @@ struct BorrowBookSheet: View {
                 HStack {
                     VStack(alignment: .leading) {
                         Text(book.title ?? "")
-                        Text(book.author ?? "").font(.caption)
+                            .font(.headline)
+                        Text(book.author ?? "")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
                     }
                     Spacer()
-                    Button("Borrow") {
+                    Button("Select") {
                         holder.borrowBook(member: member, book: book, dueDays: 7)
                         dismiss()
                     }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .padding(.vertical, 4)
+            }
+            .navigationTitle("Lend Book")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") { dismiss() }
                 }
             }
-            .navigationTitle("Select Book")
             .overlay {
                 if availableBooks.isEmpty {
-                    ContentUnavailableView("No books available", systemImage: "books.vertical")
+                    ContentUnavailableView("All books are currently borrowed", systemImage: "books.vertical.fill")
                 }
             }
         }
