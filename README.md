@@ -1,34 +1,43 @@
-**Campus_Library**
-A mobile application developed for the Computer Science program at Collège LaSalle. This project focuses on resource management and data persistence within an iOS environment.
+# Campus_Library
+### iOS Resource Management System
 
-**Features**
-Inventory Management: View and track library books and availability.
+---
 
-Loan Tracking: Manage member loans and return statuses.
+## Project Overview
+A mobile application developed for the Computer Science program at **Collège LaSalle**. This project focuses on resource management and data persistence within an iOS environment.
 
-Member Records: Database for student and library member information.
+---
 
-Local Persistence: Integrated data storage to save information between sessions.
+## **Key Features**
+* **Inventory Management**: View and track library books and availability.
+* **Loan Tracking**: Manage member loans and return statuses.
+* **Member Records**: Database for student and library member information.
+* **Local Persistence**: Integrated data storage to save information between sessions.
 
-**Technical Specifications**
-Language: Swift
+---
 
-Framework: SwiftUI
+## **Technical Specifications**
 
-Development Environment: Xcode
+| Category | Detail |
+| :--- | :--- |
+| **Language** | Swift |
+| **Framework** | SwiftUI |
+| **Environment** | Xcode |
+| **Version Control** | Git |
 
-Version Control: Git
+---
 
-**Installation**
-Clone the repository: git clone https://github.com/KR0N11/CampusLibrary.git
+## **Installation**
+1. **Clone the repository**
+   `git clone https://github.com/KR0N11/CampusLibrary.git`
+2. **Open the project**
+   Locate and open the project file in **Xcode**.
+3. **Build and Run**
+   Execute on a simulator or physical device via Xcode.
 
-Open the project in Xcode.
+---
 
-Build and run on a simulator or physical device.
-
-Author
-Ping Chun Lui
-
-Institution: Collège LaSalle
-
-GitHub: KR0N11
+## **Author**
+### **Ping Chun Lui**
+* **Institution**: Collège LaSalle
+* **GitHub**: [KR0N11](https://github.com/KR0N11)
