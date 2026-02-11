@@ -29,7 +29,7 @@ A mobile application developed for the Computer Science program at **Collège La
 
 ## **Installation**
 1. **Clone the repository**
-   `git clone https://github.com/KR0N11/CampusLibrary.git`
+   `git clone https://github.com/KR0N11/Campus_Library.git`
 2. **Open the project**
    Locate and open the project file in **Xcode**.
 3. **Build and Run**
